@@ -110,7 +110,7 @@ class BilluSwitch(QSystemTrayIcon):
         print("[DEBUG] Tray icon created")
 
         self.setIcon(QIcon.fromTheme("nvidia"))
-
+        self.setToolTip(f"BiLLuSwitch – {get_current_mode()}")
         self.menu = QMenu()
 
         # ---------- CURRENT MODE ----------
@@ -156,8 +156,6 @@ class BilluSwitch(QSystemTrayIcon):
 
         self.setContextMenu(self.menu)
 
-        # Left-click updates tooltip
-        self.activated.connect(self.left_click)
 
         # Refresh timer
         self.timer = QTimer()
@@ -167,12 +165,6 @@ class BilluSwitch(QSystemTrayIcon):
         print("[DEBUG] Initialization completed")
 
     # -----------------------------
-    def left_click(self, reason):
-        if reason == QSystemTrayIcon.ActivationReason.Trigger:
-            mode = get_current_mode()
-            self.setToolTip(f"BiLLuSwitch – {mode}")
-
-    # -----------------------------
     def update_state(self):
         print("[DEBUG] update_state() running…")
 
@@ -180,6 +172,7 @@ class BilluSwitch(QSystemTrayIcon):
         pending = get_pending_mode()
 
         print(f"[DEBUG] Pending Mode normalized = '{pending}'")
+        self.setToolTip(f"BiLLuSwitch – {mode}")
 
         # Update current mode in menu
         self.current_action.setText(f"Current Mode: {mode}")
