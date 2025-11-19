@@ -1,71 +1,91 @@
-# 🟩 BiLLuSwitch – GPU Mode Tray App for Fedora
+# 🟩 **BiLLuSwitch**
+### *A Sleek GPU-Mode Tray App for ASUS Laptops on Fedora*
 
-**BiLLuSwitch** is a lightweight system-tray application for **Fedora Linux** (tested on Fedora 39–43). It provides an easy GUI for switching GPU modes on ASUS laptops by interfacing directly with **supergfxctl**.
+**BiLLuSwitch** is a tiny, fast, and elegant system-tray utility for **ASUS laptops** running Fedora.  
+It provides a clean GUI to manage GPU modes using **supergfxctl** — without needing to touch the terminal.
 
+It blends perfectly with KDE Plasma, using automatic theme icons and non-intrusive tray UI.
 
-
-It lives in your system tray using the KDE "nvidia" icon. The current GPU mode is shown instantly when you **hover** over the icon.
+---
 
 ## ✨ Features
 
-### 🎛️ GPU Mode Switching
-- One-click switching between **Integrated**, **Hybrid**, and **dGPU (AsusMuxDgpu)**.
-- Automatically detects whether a **reboot** or **logout** is required to apply the change.
-- Confirmation dialog with a **10-second auto-confirm countdown**.
+### 🎛 **Effortless GPU Mode Switching**
+- Switch between **Integrated**, **Hybrid**, and **dGPU (AsusMuxDgpu)** modes.
+- BiLLuSwitch automatically determines if a **logout** or a **reboot** is required.
+- Beautiful confirmation dialog with a **10-second auto-confirm** countdown.
 
-### ♻️ Pending Mode Detection
-- Automatically detects if a mode change is already queued via `supergfxctl`.
-- If a change is pending (waiting for reboot), **all buttons are disabled** to prevent conflicts.
-- Displays the pending status clearly in the menu.
+---
 
-### ⚡ Auto-Refreshing
-- Refreshes GPU status every **1.5 seconds**.
-- Hover tooltip updates automatically.
+### 🕵️ **Real-Time Status Monitoring**
+BiLLuSwitch shows:
 
-### 🧰 Extra Tools
-- **Restart App:** Instantly restarts the script if it glitches.
-- **Quit:** Closes the tray icon.
+- **Current GPU Mode**
+- **Pending Mode Change**
+- **dGPU Power Status** *(Active, Suspended, Off, etc.)*
+
+Status updates refresh every **5 seconds**.
+
+---
+
+### 🔒 **Smart Safety Logic**
+- Already in that mode? BiLLuSwitch informs you.
+- Pending mode change? Options auto-disable until safe.
+
+---
+
+### 🧰 **Tools Built In**
+- **Restart App** — quickly reload the script  
+- **Quit** — closes the tray icon  
+- Icon-based menu that blends with KDE
 
 ---
 
 ## 📦 Requirements
 
-You need an ASUS laptop with `supergfxctl` configured.
+ASUS laptop with **supergfxctl** installed.
 
-**Python Dependencies:**
-```bash
+Install PyQt6:
+
+```
 pip install PyQt6
 ```
 
 ---
 
-## 🚀 Installation & Usage
+## 🚀 Installation
 
-1.  **Download the script**
-    Save the code as `billuswitch.py`.
-
-2.  **Make it executable**
-    Open your terminal in the folder where you saved it:
-    ```bash
-    chmod +x billuswitch.py
-    ```
-
-3.  **Run it**
-    ```bash
-    ./billuswitch.py
-    ```
+1. Download `billuswitch.py`
+2. Make executable:
+   ```
+   chmod +x billuswitch.py
+   ```
+3. Run:
+   ```
+   ./billuswitch.py
+   ```
 
 ---
 
 ## ❓ Troubleshooting
 
-**The icon doesn't show up?**
-- Make sure you have `AppIndicator` or `System Tray` support enabled in your Desktop Environment (GNOME users usually need an extension for this).
+**Tray icon not visible?**  
+- KDE: ensure system tray is enabled  
+- GNOME: requires AppIndicator extension  
 
-**"Unknown" Mode?**
-- Ensure the supergfxctl service is running.
+**Shows "Unknown"?**  
+Restart:
+```
+sudo systemctl restart supergfxd
+```
 
 ---
 
-## 📜 License
-Open Source. Feel free to modify and share.
+## 📜 License  
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+---
+
+<p align="center">
+  Made with ❤️ for the Linux community.
+</p>

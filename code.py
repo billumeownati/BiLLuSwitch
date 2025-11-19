@@ -10,41 +10,33 @@ from PyQt6.QtGui import QIcon, QAction
 from PyQt6.QtCore import QTimer
 
 
-# -----------------------------
-# Helpers
-# -----------------------------
 def run_cmd(cmd):
     try:
-        out = subprocess.check_output(cmd, shell=True).decode().strip()
-        print(f"[DEBUG] CMD `{cmd}` → '{out}'")
-        return out
-    except Exception as e:
-        print(f"[ERROR] run_cmd('{cmd}') failed: {e}")
+        return subprocess.check_output(cmd, shell=True).decode().strip()
+    except Exception:
         return None
 
 
 def get_current_mode():
     mode = run_cmd("supergfxctl -g")
-    if not mode:
-        mode = "Unknown"
-    print(f"[DEBUG] Current Mode = {mode}")
-    return mode
+    return mode if mode else "Unknown"
 
 
 def get_pending_mode():
-    # Fedora 43: supergfxctl -P returns "Unknown" when no pending mode
     p = run_cmd("supergfxctl -P")
-    print(f"[DEBUG RAW] Pending mode output = '{p}'")
-
-    if p is None:
+    if not p:
         return "None"
-
     p_clean = p.strip().lower()
-
     if p_clean in ["", "none", "null", "unknown", "no pending mode"]:
         return "None"
-
     return p
+
+
+def get_power_status():
+    p = run_cmd("supergfxctl -S")
+    if not p:
+        return "Unknown"
+    return p.capitalize()
 
 
 def reboot_system():
@@ -55,16 +47,13 @@ def logout_system():
     subprocess.call("loginctl terminate-user $USER", shell=True)
 
 
-# -----------------------------
-# Confirmation dialog
-# -----------------------------
 class ConfirmDialog(QDialog):
     def __init__(self, mode, requires_reboot):
         super().__init__()
+        self.setWindowIcon(QIcon.fromTheme("dialog-warning"))
         self.seconds = 10
         self.setWindowTitle(f"Switch to {mode}?")
-
-        self.resize(320,100)
+        self.resize(330, 110)
 
         msg = "This requires a reboot." if requires_reboot else "This requires logout."
 
@@ -75,10 +64,8 @@ class ConfirmDialog(QDialog):
         btns = QHBoxLayout()
         yes = QPushButton("Yes")
         no = QPushButton("Cancel")
-
         yes.clicked.connect(self.accept)
         no.clicked.connect(self.reject)
-
         btns.addWidget(yes)
         btns.addWidget(no)
         layout.addLayout(btns)
@@ -100,30 +87,42 @@ class ConfirmDialog(QDialog):
         self.label.setText(text + f"\nProceed in {self.seconds} seconds?")
 
 
-# -----------------------------
-# System Tray App
-# -----------------------------
 class BilluSwitch(QSystemTrayIcon):
     def __init__(self):
         super().__init__()
 
-        print("[DEBUG] Tray icon created")
-
         self.setIcon(QIcon.fromTheme("nvidia"))
         self.setToolTip(f"BiLLuSwitch – {get_current_mode()}")
+
         self.menu = QMenu()
 
-        # ---------- CURRENT MODE ----------
+        # Current mode
         self.current_action = QAction(f"Current Mode: {get_current_mode()}")
         self.current_action.setEnabled(False)
+        self.current_action.setIcon(QIcon.fromTheme("video-display"))
         self.menu.addAction(self.current_action)
+
+        # dGPU power
+        self.power_action = QAction(f"dGPU Power: {get_power_status()}")
+        self.power_action.setEnabled(False)
+        self.power_action.setIcon(QIcon.fromTheme("battery"))
+        self.menu.addAction(self.power_action)
 
         self.menu.addSeparator()
 
-        # ---------- MODE OPTIONS ----------
+        # Section title (unselectable)
+        modes_header = QAction("Available Modes")
+        modes_header.setEnabled(False)
+        modes_header.setIcon(QIcon.fromTheme("preferences-system"))
+        self.menu.addAction(modes_header)
+
+        # Modes
         self.act_igpu = QAction("Integrated Mode")
+        self.act_igpu.setIcon(QIcon.fromTheme("cpu"))
         self.act_hybrid = QAction("Hybrid Mode")
+        self.act_hybrid.setIcon(QIcon.fromTheme("computer"))
         self.act_dgpu = QAction("dGPU Mode")
+        self.act_dgpu.setIcon(QIcon.fromTheme("nvidia"))
 
         self.act_igpu.triggered.connect(lambda: self.apply_mode("Integrated"))
         self.act_hybrid.triggered.connect(lambda: self.apply_mode("Hybrid"))
@@ -135,62 +134,67 @@ class BilluSwitch(QSystemTrayIcon):
 
         self.menu.addSeparator()
 
-        # ---------- PENDING MODE ----------
+        # Pending mode
         self.pending_action = QAction("Pending Mode: None")
         self.pending_action.setEnabled(False)
+        self.pending_action.setIcon(QIcon.fromTheme("dialog-warning"))
         self.menu.addAction(self.pending_action)
 
         self.menu.addSeparator()
 
-        # ---------- RESTART APP ----------
+        # Restart App
         self.restart_action = QAction("Restart App")
+        self.restart_action.setIcon(QIcon.fromTheme("view-refresh"))
         self.restart_action.triggered.connect(self.restart_app)
         self.menu.addAction(self.restart_action)
-        print("[DEBUG] Restart App added")
 
-        # ---------- QUIT ----------
+        # Quit
         self.quit_action = QAction("Quit")
+        self.quit_action.setIcon(QIcon.fromTheme("application-exit"))
         self.quit_action.triggered.connect(lambda: sys.exit(0))
         self.menu.addAction(self.quit_action)
-        print("[DEBUG] Quit added")
 
         self.setContextMenu(self.menu)
 
-
-        # Refresh timer
         self.timer = QTimer()
         self.timer.timeout.connect(self.update_state)
-        self.timer.start(1500)
+        self.timer.start(5000)
 
-        print("[DEBUG] Initialization completed")
-
-    # -----------------------------
     def update_state(self):
-        print("[DEBUG] update_state() running…")
-
         mode = get_current_mode()
         pending = get_pending_mode()
+        power = get_power_status()
 
-        print(f"[DEBUG] Pending Mode normalized = '{pending}'")
         self.setToolTip(f"BiLLuSwitch – {mode}")
 
-        # Update current mode in menu
         self.current_action.setText(f"Current Mode: {mode}")
-
-        # Update pending in menu
+        self.power_action.setText(f"dGPU Power: {power}")
         self.pending_action.setText(f"Pending Mode: {pending}")
 
-        # disable when pending mode exists
         enable = (pending == "None")
-        print(f"[DEBUG] Buttons enabled = {enable}")
-
         self.act_igpu.setEnabled(enable)
         self.act_hybrid.setEnabled(enable)
         self.act_dgpu.setEnabled(enable)
 
-    # -----------------------------
     def apply_mode(self, mode):
         current = get_current_mode()
+
+        # If trying to switch to the current mode
+        if current.lower() == mode.lower():
+            dialog = QDialog()
+            dialog.setWindowTitle("No Change Needed")
+            dialog.setWindowIcon(QIcon.fromTheme("dialog-information"))
+            dialog.resize(330, 90)
+            layout = QVBoxLayout()
+            msg = QLabel(f"You are already in {mode} mode.")
+            layout.addWidget(msg)
+            btn = QPushButton("OK")
+            btn.clicked.connect(dialog.accept)
+            layout.addWidget(btn)
+            dialog.setLayout(layout)
+            dialog.exec()
+            return
+
         requires_reboot = (current == "AsusMuxDgpu" or mode == "AsusMuxDgpu")
 
         dialog = ConfirmDialog(mode, requires_reboot)
@@ -201,13 +205,12 @@ class BilluSwitch(QSystemTrayIcon):
             else:
                 logout_system()
 
-    # -----------------------------
+
     def restart_app(self):
         python = sys.executable
         os.execv(python, [python] + sys.argv)
 
 
-# -----------------------------
 def main():
     app = QApplication(sys.argv)
     tray = BilluSwitch()
