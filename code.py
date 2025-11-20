@@ -92,7 +92,7 @@ class BilluSwitch(QSystemTrayIcon):
         super().__init__()
 
         self.setIcon(QIcon.fromTheme("nvidia"))
-        self.setToolTip(f"BiLLuSwitch – {get_current_mode()}")
+        self.setToolTip(f"BiLLuSwitch – {get_current_mode()}\n\ndGPU Power: {get_power_status()}")
 
         self.menu = QMenu()
 
@@ -165,7 +165,7 @@ class BilluSwitch(QSystemTrayIcon):
         pending = get_pending_mode()
         power = get_power_status()
 
-        self.setToolTip(f"BiLLuSwitch – {mode}")
+        self.setToolTip(f"BiLLuSwitch – {mode}\n\ndGPU Power: {power}")
 
         self.current_action.setText(f"Current Mode: {mode}")
         self.power_action.setText(f"dGPU Power: {power}")
